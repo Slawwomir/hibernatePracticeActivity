@@ -5,16 +5,9 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
-public class Main {
+import java.util.List;
 
-    private SessionFactory factory = new Configuration()
-            .configure("hibernate.cfg.xml")
-            .addAnnotatedClass(Employee.class)
-            .buildSessionFactory();
-
-    public static void main(String[] args) {
-
-    }
+public class DatabaseManager {
 
     public Employee readEmployee(int id){
 
@@ -73,12 +66,12 @@ public class Main {
 
     public void removeEmployee(int id){
 
-        SessionFactory factory = new Configuration()
+        try (SessionFactory factory = new Configuration()
                 .configure("hibernate.cfg.xml")
                 .addAnnotatedClass(Employee.class)
-                .buildSessionFactory();
+                .buildSessionFactory()) {
 
-        try(Session session = factory.getCurrentSession()) {
+            Session session = factory.getCurrentSession();
 
             // begin transaction
             session.beginTransaction();
@@ -89,6 +82,10 @@ public class Main {
             // commit transaction
             session.getTransaction().commit();
 
+            // get new session
+            session = factory.getCurrentSession();
+            session.beginTransaction();
+
             // remove
             session.remove(employee);
 
@@ -98,12 +95,36 @@ public class Main {
             // Done!
             System.out.println("Employee has been removed!");
         }
-        finally {
-            factory.close();
-        }
     }
 
     public void removeEmployee(Employee employee){
         removeEmployee(employee.getId());
+    }
+
+    public Employee[] getAll() {
+        SessionFactory factory = new Configuration()
+                .configure("hibernate.cfg.xml")
+                .addAnnotatedClass(Employee.class)
+                .buildSessionFactory();
+
+        List<Employee> employees;
+
+        try(Session session = factory.getCurrentSession()) {
+
+            // begin transaction
+            session.beginTransaction();
+
+            // retrieve objects
+        employees = session.createQuery("from Employee").getResultList();
+
+            // commit transaction
+            session.getTransaction().commit();
+
+        }
+        finally {
+            factory.close();
+        }
+
+        return employees.toArray(new Employee[0]);
     }
 }
